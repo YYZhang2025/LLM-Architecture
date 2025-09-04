@@ -44,29 +44,33 @@ def train(model_config, train_config, run=None):
         else torch.autocast(train_config.device.type, dtype=torch.bfloat16)
     )
 
-    model = Baseline(model_config).to(train_cfg.device)
+    model = Baseline(model_config).to(train_config.device)
     print_num_parameters(model)
     tokenizer = Tokenizer.from_file(TOKENIZER_JSON_PATH)
 
     train_dl, eval_dl = get_dataloaders(
-        batch_size=train_cfg.micro_batch_size, seq_len=model_config.max_seq_len
+        batch_size=train_config.micro_batch_size, seq_len=model_config.max_seq_len
     )
-    total_steps = train_cfg.epochs * (len(train_dl.dataset) // train_cfg.micro_batch_size)
+    total_steps = train_config.epochs * len(train_dl) // train_config.gradient_accumulation_steps
+    print_color(f"Total training steps: {total_steps}", "green")
     train_dl = cycle_dataloader(train_dl)
 
     optimizer = torch.optim.AdamW(
-        model.parameters(), lr=train_cfg.max_lr, weight_decay=train_cfg.weight_decay, betas=train_cfg.betas
+        model.parameters(),
+        lr=train_config.max_lr,
+        weight_decay=train_config.weight_decay,
+        betas=train_config.betas,
     )
 
     for step in range(total_steps):
         model.train()
         batch_loss = 0.0
         start_time = time.time()
-        for _ in range(train_cfg.gradient_accumulation_steps):
+        for _ in range(train_config.gradient_accumulation_steps):
             batch = next(train_dl)
-            input_ids = batch["input_ids"].to(train_cfg.device)
-            attention_mask = batch["attention_mask"].to(train_cfg.device)
-            labels = batch["labels"].to(train_cfg.device)
+            input_ids = batch["input_ids"].to(train_config.device, non_blocking=True)
+            attention_mask = batch["attention_mask"].to(train_config.device, non_blocking=True)
+            labels = batch["labels"].to(train_config.device, non_blocking=True)
 
             with ctx:
                 logits, _ = model(input_ids=input_ids, attention_mask=attention_mask)
@@ -74,16 +78,16 @@ def train(model_config, train_config, run=None):
                     logits.view(-1, model_config.vocab_size),
                     labels.view(-1),
                 )
-                loss = loss / train_cfg.gradient_accumulation_steps
+                loss = loss / train_config.gradient_accumulation_steps
+                loss.backward()
 
-            loss.backward()
             batch_loss += loss.item()
 
-        torch.nn.utils.clip_grad_norm_(model.parameters(), train_cfg.grad_clip)
+        torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=train_config.grad_clip)
         optimizer.step()
-        optimizer.zero_grad()
+        optimizer.zero_grad(set_to_none=True)
 
-        lr = get_lr(train_cfg, step, total_steps)
+        lr = get_lr(train_config, step, total_steps)
         for param_group in optimizer.param_groups:
             param_group["lr"] = lr
 
@@ -98,16 +102,16 @@ def train(model_config, train_config, run=None):
                 {"train/loss": batch_loss, "train/elapsed_time": time_elapsed, "train/lr": lr}, step=step + 1
             )
 
-        if (step + 1) % 10 == 0:
+        if (step + 1) % 5 == 0:
             print(f"Step {step + 1}/{total_steps}, Loss: {batch_loss:.4f}")
-            sample_input_id = input_ids[:1, :]
-            sample_logits, _ = model(input_ids=sample_input_id, attention_mask=None)
-            sample_next_token = torch.argmax(sample_logits, dim=-1)
+            # sample_input_id = input_ids[:1, :]
+            # sample_logits, _ = model(input_ids=sample_input_id, attention_mask=None)
+            # sample_next_token = torch.argmax(sample_logits, dim=-1)
 
-            sample_input_id = sample_input_id.squeeze(0)
-            sample_next_token = sample_next_token.squeeze(0)
-            print("Sample input ids:", tokenizer.decode(sample_input_id.cpu().numpy()))
-            print("Sample output", tokenizer.decode(sample_next_token.cpu().numpy()))
+            # sample_input_id = sample_input_id.squeeze(0)
+            # sample_next_token = sample_next_token.squeeze(0)
+            # print("Sample input ids:", tokenizer.decode(sample_input_id.cpu().numpy()))
+            # print("Sample output", tokenizer.decode(sample_next_token.cpu().numpy()))
 
         batch_loss = 0.0
         clear_cache()
@@ -121,22 +125,26 @@ if __name__ == "__main__":
 
     model_config = ModelConfig()
 
-    train_cfg = TrainConfig()
-    train_cfg.device = get_device()
+    train_config = TrainConfig()
+    train_config.device = get_device()
 
     print_rich_dict(asdict(model_config), title="Model Config")
-    print_rich_dict(asdict(train_cfg), title="Train Config")
+    print_rich_dict(asdict(train_config), title="Train Config")
 
     # INITIALIZE WANDB
     run = None
-    # if os.getenv("WANDB_API_KEY") is not None:
-    #     api_key = os.getenv("WANDB_API_KEY")
-    #     wandb.login(key=api_key)
-    #     run = wandb.init(
-    #         project=os.getenv("WANDB_PROJECT"),
-    #         entity=os.getenv("WANDB_ENTITY"),
-    #         config={"version": "baseline", "train_cfg": asdict(train_cfg), "model_cfg": asdict(model_config)},
-    #         name="baseline",
-    #     )
+    if os.getenv("WANDB_API_KEY") is not None:
+        api_key = os.getenv("WANDB_API_KEY")
+        wandb.login(key=api_key)
+        run = wandb.init(
+            project=os.getenv("WANDB_PROJECT"),
+            entity=os.getenv("WANDB_ENTITY"),
+            config={
+                "version": "baseline",
+                "train_config": asdict(train_config),
+                "model_cfg": asdict(model_config),
+            },
+            name="baseline",
+        )
 
-    train(model_config, train_cfg, run)
+    train(model_config, train_config, run)
