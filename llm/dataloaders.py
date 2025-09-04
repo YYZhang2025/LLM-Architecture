@@ -2,6 +2,9 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader, Dataset
 
+TRAIN_PATH = "./data/tinystories/tinystories_train_tokens.npy"
+EVAL_PATH = "./data/tinystories/tinystories_eval_tokens.npy"
+
 
 class TinyStoriesDataset(Dataset):
     def __init__(self, npy_file, seq_len=512, stride=None):
@@ -20,7 +23,14 @@ class TinyStoriesDataset(Dataset):
         return {"input_ids": x, "attention_mask": torch.ones_like(x), "labels": x.clone()}
 
 
-def get_dataloaders(train_npy_path, eval_npy_path, batch_size=8, seq_len=512, num_workers=4, pin_memory=True):
+def get_dataloaders(
+    train_npy_path=TRAIN_PATH,
+    eval_npy_path=EVAL_PATH,
+    batch_size=8,
+    seq_len=512,
+    num_workers=4,
+    pin_memory=True,
+):
     train_ds = TinyStoriesDataset(train_npy_path, seq_len=seq_len)
     eval_ds = TinyStoriesDataset(eval_npy_path, seq_len=seq_len)
 
@@ -34,10 +44,14 @@ def get_dataloaders(train_npy_path, eval_npy_path, batch_size=8, seq_len=512, nu
     return train_dl, eval_dl
 
 
+def cycle_dataloader(dl: DataLoader):
+    while True:
+        for batch in dl:
+            yield batch
+
+
 if __name__ == "__main__":
-    train_path = "./data/tinystories/tinystories_train_tokens.npy"
-    eval_path = "./data/tinystories/tinystories_eval_tokens.npy"
-    train_dl, eval_dl = get_dataloaders(train_path, eval_path, batch_size=2)
+    train_dl, eval_dl = get_dataloaders(batch_size=2)
     batch = next(iter(train_dl))
 
     print("input_ids shape:", batch["input_ids"].shape)
