@@ -132,6 +132,7 @@ class TrainConfig:
 
 <h3 align="center">Baseline Model</h3>
 The baseline model is using: `./llm/models/baseline.py`
+
 - Sinusoidal Positional Encoding: `llm/models/positional_encodings/sined_pe.py`
 - RMSNorm: `llm/models/norms.py`
   - Pre-Norm: `./llm/models/baseline.py`
