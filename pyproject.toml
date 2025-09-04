@@ -1,5 +1,5 @@
 [project]
-name = "llm_architecture"
+name = "llm-architecture"
 readme = "ReadME.md"
 version = "0.1.0"
 requires-python = ">=3.12"
@@ -20,3 +20,8 @@ dependencies = [
 
 [tool.setuptools.packages.find]
 include = ["llm*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+fix = true

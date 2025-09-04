@@ -23,7 +23,11 @@ class TinyStoriesDataset(Dataset):
         input_ids = x[:-1].contiguous().clone()
         labels = x[1:].contiguous().clone()
 
-        return {"input_ids": input_ids, "attention_mask": torch.ones_like(input_ids).bool(), "labels": labels}
+        return {
+            "input_ids": input_ids,
+            "attention_mask": torch.ones_like(input_ids).bool(),
+            "labels": labels,
+        }
 
 
 def get_dataloaders(
@@ -38,10 +42,18 @@ def get_dataloaders(
     eval_ds = TinyStoriesDataset(eval_npy_path, seq_len=seq_len)
 
     train_dl = DataLoader(
-        train_ds, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=pin_memory
+        train_ds,
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
     )
     eval_dl = DataLoader(
-        eval_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=pin_memory
+        eval_ds,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
     )
 
     return train_dl, eval_dl

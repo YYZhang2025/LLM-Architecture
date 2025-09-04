@@ -1,21 +1,17 @@
 import os
-import time
 import warnings
 from dataclasses import asdict
+from pathlib import Path
 
 import dotenv
 import torch
 from tokenizers import Tokenizer
 
-import wandb
 from llm.config import TrainConfig
-from llm.dataloaders import cycle_dataloader, get_dataloaders
 from llm.models.baseline import Baseline, ModelConfig
+from llm.train_engine import train_model
 from llm.utils import (
-    clear_cache,
-    generate_samples,
     get_device,
-    get_lr,
     print_color,
     print_num_parameters,
     print_rich_dict,
@@ -24,109 +20,6 @@ from llm.utils import (
 
 warnings.filterwarnings("ignore")
 TOKENIZER_JSON_PATH = "./data/tinystories/tokenizer-bpe.json"
-
-
-def train(model_config, train_config, run=None):
-    ctx = (
-        torch.autocast(train_config.device.type, dtype=torch.float16)
-        if train_config.device.type != "cuda"
-        else torch.autocast(train_config.device.type, dtype=torch.bfloat16)
-    )
-
-    model = Baseline(model_config).to(train_config.device)
-    print_num_parameters(model)
-    tokenizer = Tokenizer.from_file(TOKENIZER_JSON_PATH)
-
-    train_dl, eval_dl = get_dataloaders(
-        batch_size=train_config.micro_batch_size, seq_len=model_config.max_seq_len
-    )
-    total_steps = train_config.epochs * len(train_dl) // train_config.gradient_accumulation_steps
-    print_color(f"Total training steps: {total_steps}", "green")
-    train_dl = cycle_dataloader(train_dl)
-
-    optimizer = torch.optim.AdamW(
-        model.parameters(),
-        lr=train_config.max_lr,
-        weight_decay=train_config.weight_decay,
-        betas=train_config.betas,
-    )
-
-    total_start_time = time.time()
-    for step in range(total_steps):
-        model.train()
-        batch_loss = 0.0
-        start_time = time.time()
-        for _ in range(train_config.gradient_accumulation_steps):
-            batch = next(train_dl)
-            input_ids = batch["input_ids"].to(train_config.device, non_blocking=True)
-            attention_mask = batch["attention_mask"].to(train_config.device, non_blocking=True)
-            labels = batch["labels"].to(train_config.device, non_blocking=True)
-
-            with ctx:
-                logits, _ = model(input_ids=input_ids, attention_mask=attention_mask)
-                loss = torch.nn.functional.cross_entropy(
-                    logits.view(-1, model_config.vocab_size),
-                    labels.view(-1),
-                )
-                loss = loss / train_config.gradient_accumulation_steps
-                loss.backward()
-
-            batch_loss += loss.item()
-            del input_ids, attention_mask, labels, logits, loss
-            clear_cache()
-
-        lr = get_lr(train_config, step, total_steps)
-        for param_group in optimizer.param_groups:
-            param_group["lr"] = lr
-        torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=train_config.grad_clip)
-        optimizer.step()
-        optimizer.zero_grad(set_to_none=True)
-
-        if torch.cuda.is_available():
-            torch.cuda.synchronize()
-        elif torch.backends.mps.is_available():
-            torch.mps.synchronize()
-
-        time_elapsed = time.time() - start_time
-        if run is not None:
-            run.log(
-                {"train/loss": batch_loss, "train/elapsed_time": time_elapsed, "train/lr": lr}, step=step + 1
-            )
-
-        print(
-            f"Step {step + 1}/{total_steps} | Loss: {batch_loss:.4f} | LR: {lr:.6f} | Time: {time_elapsed:.2f}s"
-        )
-        batch_loss = 0.0
-
-        if (step + 1) % train_config.eval_steps == 0 or step == total_steps - 1:
-            model.eval()
-            eval_loss = 0.0
-            with torch.no_grad():
-                for batch in eval_dl:
-                    input_ids = batch["input_ids"].to(train_config.device, non_blocking=True)
-                    attention_mask = batch["attention_mask"].to(train_config.device, non_blocking=True)
-                    labels = batch["labels"].to(train_config.device, non_blocking=True)
-
-                    logits, _ = model(input_ids=input_ids, attention_mask=attention_mask)
-                    loss = torch.nn.functional.cross_entropy(
-                        logits.view(-1, model_config.vocab_size),
-                        labels.view(-1),
-                    )
-                    eval_loss += loss.item()
-
-            eval_loss /= len(eval_dl)
-            if run is not None:
-                run.log({"eval/loss": eval_loss}, step=step + 1)
-            print_color(f"Eval Loss ({step + 1} / {total_steps}): {eval_loss:.4f}", "cyan")
-            prompt = "Once upon a time in a land far, far away, "
-            generated_text = generate_samples(model, tokenizer, train_config.device, prompt, max_length=100)
-            print_color(f"Sample Generation:\n{prompt}{generated_text}", "yellow")
-
-            model.train()
-
-    total_time = time.time() - total_start_time
-    print_color(f"Total training time: {total_time / 60:.2f} minutes", "green")
-    print("Training completed.")
 
 
 if __name__ == "__main__":
@@ -142,20 +35,32 @@ if __name__ == "__main__":
 
     # INITIALIZE WANDB
     run = None
-    if os.getenv("WANDB_API_KEY") is not None:
-        api_key = os.getenv("WANDB_API_KEY")
-        wandb.login(key=api_key)
-        run = wandb.init(
-            project=os.getenv("WANDB_PROJECT"),
-            entity=os.getenv("WANDB_ENTITY"),
-            config={
-                "version": "baseline",
-                "train_config": asdict(train_config),
-                "model_cfg": asdict(model_config),
-            },
-            name="baseline",
-        )
+    # if os.getenv("WANDB_API_KEY") is not None:
+    #     api_key = os.getenv("WANDB_API_KEY")
+    #     wandb.login(key=api_key)
+    #     run = wandb.init(
+    #         project=os.getenv("WANDB_PROJECT"),
+    #         entity=os.getenv("WANDB_ENTITY"),
+    #         config={
+    #             "version": "baseline",
+    #             "train_config": asdict(train_config),
+    #             "model_cfg": asdict(model_config),
+    #         },
+    #         name="baseline",
+    #     )
 
     print_rich_dict(asdict(model_config), title="Model Config")
     print_rich_dict(asdict(train_config), title="Train Config")
-    train(model_config, train_config, run)
+
+    model = Baseline(model_config).to(train_config.device)
+    print_num_parameters(model)
+    tokenizer = Tokenizer.from_file(TOKENIZER_JSON_PATH)
+
+    train_model(model, tokenizer, model_config, train_config, run)
+
+    # --------------
+    # SAVE THE MODEL
+    # --------------
+    Path.mkdir(Path("checkpoints"), exist_ok=True)
+    torch.save(model.state_dict(), "checkpoints/baseline-model.pth")
+    print_color("Model saved to checkpoints/baseline-model.pth", "green")
