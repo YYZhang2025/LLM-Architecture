@@ -1,23 +1,12 @@
-from dataclasses import dataclass
-
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
+from llm.config import ModelConfig
 from llm.modules.attentions import MultiHeadedAttention
 from llm.modules.ffn import MLP
 from llm.modules.norms import LayerNorm
 from llm.modules.position_encodings import LearnedPositionalEncoding
-
-
-@dataclass
-class ModelConfig:
-    n_heads: int = 8
-    d_model: int = 512
-    d_ff: int = 2048
-
-    n_layers: int = 6
-    max_seq_len: int = 512
-    vocab_size: int = 16_000
 
 
 class Embedding(nn.Module):
@@ -75,13 +64,24 @@ class Baseline(nn.Module):
 
         self.apply(self._init_weight)
 
+    @torch.no_grad()
+    def generate(self, input_ids: torch.Tensor) -> torch.Tensor:
+        self.eval()
+        with torch.no_grad():
+            logits, _ = self.forward(input_ids)
+            next_token_logits = logits[:, -1, :]
+            next_token = torch.argmax(next_token_logits, dim=-1, keepdim=True)
+        return next_token
+
     def forward(self, input_ids: torch.Tensor, attention_mask: torch.Tensor | None = None):
         x = self.embedding(input_ids)
 
         for layer in self.layers:
             x, attn_probs = layer(x, attention_mask=attention_mask)
 
-        return x, attn_probs
+        logits = F.linear(x, self.embedding.emb.weight)
+
+        return logits, attn_probs
 
     def _init_weight(self, module):
         if isinstance(module, (nn.Linear, nn.Embedding)):

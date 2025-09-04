@@ -1,0 +1,11 @@
+[32mModel initialized. Number of parameters: [0m[1;32m27368448[0m
+/Users/yuyang/Desktop/Projects/LLM-Architecture/.venv/lib/python3.12/site-packages/torch/utils/data/dataloader.py:684: UserWarning: 'pin_memory' argument is set as true but not supported on MPS now, then device pinned memory won't be used.
+  warnings.warn(warn_msg)
+Step 10/100, Loss: 8.8471
+Traceback (most recent call last):
+  File "/Users/yuyang/Desktop/Projects/LLM-Architecture/train_scripts/train_baseline.py", line 107, in <module>
+    train(model_config, train_cfg, run)
+  File "/Users/yuyang/Desktop/Projects/LLM-Architecture/train_scripts/train_baseline.py", line 74, in train
+    print("Sample input ids:", tokenizer.decode(sample_input_id.cpu().numpy()))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: argument 'ids': only integer scalar arrays can be converted to a scalar index

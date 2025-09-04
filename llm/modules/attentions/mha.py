@@ -31,7 +31,7 @@ class MultiHeadedAttention(nn.Module):
         attn_weights = (q @ k.transpose(-2, -1)) * self.scaling
 
         if self.is_causal:
-            causal_mask = torch.tril(torch.ones(1, 1, S, S, device=x.device))
+            causal_mask = torch.tril(torch.ones(1, 1, S, S, device=x.device).bool())
             if attention_mask is not None:
                 # TODO: Since our encoding method has no <pad> tokens, so the attention mask is None
                 # Need to check whether this is correct when the attention is not all 1

@@ -20,7 +20,10 @@ class TinyStoriesDataset(Dataset):
         s = i * self.stride
         x = torch.as_tensor(self.tokens[s : s + self.seq_len], dtype=torch.long)
 
-        return {"input_ids": x, "attention_mask": torch.ones_like(x), "labels": x.clone()}
+        input_ids = x[:-1].contiguous().clone()
+        labels = x[1:].contiguous().clone()
+
+        return {"input_ids": input_ids, "attention_mask": torch.ones_like(input_ids).bool(), "labels": labels}
 
 
 def get_dataloaders(

@@ -32,5 +32,6 @@ def get_num_parameters(model: torch.nn.Module) -> int:
 def clear_cache():
     """Clear the PyTorch cache."""
     gc.collect()
-    torch.cuda.empty_cache()
-    torch.cuda.ipc_collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+        torch.cuda.ipc_collect()

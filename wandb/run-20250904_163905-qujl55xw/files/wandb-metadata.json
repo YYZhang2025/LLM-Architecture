@@ -1,0 +1,37 @@
+{
+  "os":  "macOS-15.6-arm64-arm-64bit",
+  "python":  "CPython 3.12.11",
+  "startedAt":  "2025-09-04T08:39:05.035008Z",
+  "program":  "/Users/yuyang/Desktop/Projects/LLM-Architecture/train_scripts/train_baseline.py",
+  "codePath":  "train_scripts/train_baseline.py",
+  "codePathLocal":  "train_scripts/train_baseline.py",
+  "git":  {
+    "remote":  "git@github.com:YYZhang2025/LLM-Architecture.git",
+    "commit":  "429fd9ee72d9e8d00b4c83412c29a73ce1874f28"
+  },
+  "email":  "yuyangzhang2025@gmail.com",
+  "root":  "/Users/yuyang/Desktop/Projects/LLM-Architecture",
+  "host":  "YuyangZhangs-MacBook-Pro.local",
+  "executable":  "/Users/yuyang/Desktop/Projects/LLM-Architecture/.venv/bin/python",
+  "cpu_count":  14,
+  "cpu_count_logical":  14,
+  "disk":  {
+    "/":  {
+      "total":  "494384795648",
+      "used":  "215488933888"
+    }
+  },
+  "memory":  {
+    "total":  "51539607552"
+  },
+  "apple":  {
+    "name":  "Apple M4 Pro",
+    "ecpuCores":  4,
+    "pcpuCores":  10,
+    "gpuCores":  20,
+    "memoryGb":  48,
+    "swapTotalBytes":  "5368709120",
+    "ramTotalBytes":  "51539607552"
+  },
+  "writerId":  "syjom5dkuo3ao6o2rbmted5fa9lxfzb2"
+}

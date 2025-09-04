@@ -23,6 +23,7 @@ It will automatically create a virtual environment and install the required depe
 
 And we also need download the `tinystories` dataset through
 ```Shell
+chmod +x download.sh
 ./download.sh
 ```
 
