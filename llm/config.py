@@ -10,7 +10,7 @@ class ModelConfig:
     d_ff: int = 2048
     n_layers: int = 8
 
-    max_seq_len: int = 1024
+    max_seq_len: int = 512
     vocab_size: int = 16_000
 
 
@@ -19,8 +19,8 @@ class TrainConfig:
     device: torch.device = torch.device("cpu")
 
     epochs: int = 2
-    micro_batch_size: int = 32
-    gradient_accumulation_steps: int = 4
+    micro_batch_size: int = 128
+    gradient_accumulation_steps: int = 2
 
     betas: tuple = (0.9, 0.95)
     grad_clip: float = 1.0

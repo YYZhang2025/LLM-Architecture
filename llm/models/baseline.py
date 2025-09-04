@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from llm.config import ModelConfig
 from llm.modules.attentions import MultiHeadedAttention
 from llm.modules.ffn import MLP
-from llm.modules.norms import LayerNorm
+from llm.modules.norms import RMSNorm
 from llm.modules.position_encodings import SinePositionalEncoding
 
 
@@ -30,15 +30,15 @@ class EncoderBlock(nn.Module):
         self.attn = MultiHeadedAttention(d_model=d_model, n_heads=n_heads, is_causal=True)
         self.ffn = MLP(d_model=d_model, d_ff=d_ff, act_fn=nn.GELU)
 
-        self.norm1 = LayerNorm(dim=d_model)
-        self.norm2 = LayerNorm(dim=d_model)
+        self.norm1 = RMSNorm(dim=d_model)
+        self.norm2 = RMSNorm(dim=d_model)
 
     def forward(self, x: torch.Tensor, attention_mask: torch.Tensor | None = None):
-        attn_out, attn_probs = self.attn(x, attention_mask=attention_mask)
-        x = self.norm1(x + attn_out)
+        attn_out, attn_probs = self.attn(self.norm1(x), attention_mask=attention_mask)
+        x = x + attn_out
 
-        ffn_out = self.ffn(x)
-        x = self.norm2(x + ffn_out)
+        ffn_out = self.ffn(self.norm2(x))
+        x = x + ffn_out
 
         return x, attn_probs
 
@@ -48,9 +48,7 @@ class Baseline(nn.Module):
         super().__init__()
 
         self.config = config
-
         self.embedding = Embedding(config)
-
         self.layers = nn.ModuleList(
             [
                 EncoderBlock(
@@ -88,6 +86,3 @@ class Baseline(nn.Module):
             nn.init.xavier_uniform_(
                 module.weight,
             )
-        elif isinstance(module, LayerNorm):
-            nn.init.constant_(module.weight, 1)
-            nn.init.constant_(module.bias, 0)
