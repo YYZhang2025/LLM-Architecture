@@ -1,4 +1,3 @@
-import math
 import os
 import time
 import warnings
@@ -14,28 +13,17 @@ from llm.dataloaders import cycle_dataloader, get_dataloaders
 from llm.models.baseline import Baseline, ModelConfig
 from llm.utils import (
     clear_cache,
+    generate_samples,
     get_device,
+    get_lr,
     print_color,
     print_num_parameters,
     print_rich_dict,
+    seed_everything,
 )
 
 warnings.filterwarnings("ignore")
 TOKENIZER_JSON_PATH = "./data/tinystories/tokenizer-bpe.json"
-
-
-def get_lr(train_config: TrainConfig, cur_step: int, total_steps: int) -> float:
-    if cur_step < train_config.warmup_steps:
-        return train_config.max_lr * (cur_step + 1) / train_config.warmup_steps
-
-    if cur_step > total_steps:
-        return train_config.min_lr
-    # 3) in between, use cosine decay down to min learning rate
-    decay_ratio = (cur_step - train_config.warmup_steps) / (total_steps - train_config.warmup_steps)
-    assert 0 <= decay_ratio <= 1
-    coeff = 0.5 * (1.0 + math.cos(math.pi * decay_ratio))  # coeff starts at 1 and goes to 0
-
-    return train_config.min_lr + coeff * (train_config.max_lr - train_config.min_lr)
 
 
 def train(model_config, train_config, run=None):
@@ -63,6 +51,7 @@ def train(model_config, train_config, run=None):
         betas=train_config.betas,
     )
 
+    total_start_time = time.time()
     for step in range(total_steps):
         model.train()
         batch_loss = 0.0
@@ -83,14 +72,15 @@ def train(model_config, train_config, run=None):
                 loss.backward()
 
             batch_loss += loss.item()
-
-        torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=train_config.grad_clip)
-        optimizer.step()
-        optimizer.zero_grad(set_to_none=True)
+            del input_ids, attention_mask, labels, logits, loss
+            clear_cache()
 
         lr = get_lr(train_config, step, total_steps)
         for param_group in optimizer.param_groups:
             param_group["lr"] = lr
+        torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=train_config.grad_clip)
+        optimizer.step()
+        optimizer.zero_grad(set_to_none=True)
 
         if torch.cuda.is_available():
             torch.cuda.synchronize()
@@ -103,20 +93,39 @@ def train(model_config, train_config, run=None):
                 {"train/loss": batch_loss, "train/elapsed_time": time_elapsed, "train/lr": lr}, step=step + 1
             )
 
-        if (step + 1) % 5 == 0:
-            print(f"Step {step + 1}/{total_steps}, Loss: {batch_loss:.4f}")
-            # sample_input_id = input_ids[:1, :]
-            # sample_logits, _ = model(input_ids=sample_input_id, attention_mask=None)
-            # sample_next_token = torch.argmax(sample_logits, dim=-1)
-
-            # sample_input_id = sample_input_id.squeeze(0)
-            # sample_next_token = sample_next_token.squeeze(0)
-            # print("Sample input ids:", tokenizer.decode(sample_input_id.cpu().numpy()))
-            # print("Sample output", tokenizer.decode(sample_next_token.cpu().numpy()))
-
+        print(
+            f"Step {step + 1}/{total_steps} | Loss: {batch_loss:.4f} | LR: {lr:.6f} | Time: {time_elapsed:.2f}s"
+        )
         batch_loss = 0.0
-        clear_cache()
 
+        if (step + 1) % train_config.eval_steps == 0 or step == total_steps - 1:
+            model.eval()
+            eval_loss = 0.0
+            with torch.no_grad():
+                for batch in eval_dl:
+                    input_ids = batch["input_ids"].to(train_config.device, non_blocking=True)
+                    attention_mask = batch["attention_mask"].to(train_config.device, non_blocking=True)
+                    labels = batch["labels"].to(train_config.device, non_blocking=True)
+
+                    logits, _ = model(input_ids=input_ids, attention_mask=attention_mask)
+                    loss = torch.nn.functional.cross_entropy(
+                        logits.view(-1, model_config.vocab_size),
+                        labels.view(-1),
+                    )
+                    eval_loss += loss.item()
+
+            eval_loss /= len(eval_dl)
+            if run is not None:
+                run.log({"eval/loss": eval_loss}, step=step + 1)
+            print_color(f"Eval Loss ({step + 1} / {total_steps}): {eval_loss:.4f}", "cyan")
+            prompt = "Once upon a time in a land far, far away, "
+            generated_text = generate_samples(model, tokenizer, train_config.device, prompt, max_length=100)
+            print_color(f"Sample Generation:\n{prompt}{generated_text}", "yellow")
+
+            model.train()
+
+    total_time = time.time() - total_start_time
+    print_color(f"Total training time: {total_time / 60:.2f} minutes", "green")
     print("Training completed.")
 
 
@@ -129,8 +138,7 @@ if __name__ == "__main__":
     train_config = TrainConfig()
     train_config.device = get_device()
 
-    print_rich_dict(asdict(model_config), title="Model Config")
-    print_rich_dict(asdict(train_config), title="Train Config")
+    seed_everything(42)
 
     # INITIALIZE WANDB
     run = None
@@ -148,4 +156,6 @@ if __name__ == "__main__":
             name="baseline",
         )
 
+    print_rich_dict(asdict(model_config), title="Model Config")
+    print_rich_dict(asdict(train_config), title="Train Config")
     train(model_config, train_config, run)
