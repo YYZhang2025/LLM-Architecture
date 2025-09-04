@@ -16,17 +16,22 @@ def print_color(text: str, color: str = "red"):
     print(f"[{color}]{text}[/{color}]")
 
 
+def get_num_parameters(model: torch.nn.Module) -> int:
+    """Get the number of parameters in a model."""
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+
+def print_num_parameters(model: torch.nn.Module):
+    num_params = get_num_parameters(model)
+    print_color(f"Number of trainable parameters: {num_params:,}", color="green")
+
+
 def get_device():
     if torch.cuda.is_available():
         return torch.device("cuda")
     elif torch.backends.mps.is_available():
         return torch.device("mps")
     return torch.device("cpu")
-
-
-def get_num_parameters(model: torch.nn.Module) -> int:
-    """Get the number of parameters in a model."""
-    return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
 def clear_cache():

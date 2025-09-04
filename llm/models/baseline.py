@@ -6,7 +6,7 @@ from llm.config import ModelConfig
 from llm.modules.attentions import MultiHeadedAttention
 from llm.modules.ffn import MLP
 from llm.modules.norms import LayerNorm
-from llm.modules.position_encodings import LearnedPositionalEncoding
+from llm.modules.position_encodings import SinePositionalEncoding
 
 
 class Embedding(nn.Module):
@@ -14,7 +14,7 @@ class Embedding(nn.Module):
         super().__init__()
 
         self.emb = nn.Embedding(config.vocab_size, config.d_model)
-        self.pos_enc = LearnedPositionalEncoding(d_model=config.d_model, max_len=config.max_seq_len)
+        self.pos_enc = SinePositionalEncoding(d_model=config.d_model, max_len=config.max_seq_len)
 
     def forward(self, input_ids: torch.Tensor):
         x = self.emb(input_ids)

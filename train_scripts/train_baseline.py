@@ -11,7 +11,14 @@ import wandb
 from llm.config import TrainConfig
 from llm.dataloaders import cycle_dataloader, get_dataloaders
 from llm.models.baseline import Baseline, ModelConfig
-from llm.utils import clear_cache, get_device, get_num_parameters, print_color, print_rich_dict
+from llm.utils import (
+    clear_cache,
+    get_device,
+    get_num_parameters,
+    print_color,
+    print_num_parameters,
+    print_rich_dict,
+)
 
 TOKENIZER_JSON_PATH = "./data/tinystories/tokenizer-bpe.json"
 
@@ -38,7 +45,7 @@ def train(model_config, train_config, run=None):
     )
 
     model = Baseline(model_config).to(train_cfg.device)
-    print_color(f"Model initialized. Number of parameters: {get_num_parameters(model)}", color="green")
+    print_num_parameters(model)
     tokenizer = Tokenizer.from_file(TOKENIZER_JSON_PATH)
 
     train_dl, eval_dl = get_dataloaders(
@@ -122,14 +129,14 @@ if __name__ == "__main__":
 
     # INITIALIZE WANDB
     run = None
-    if os.getenv("WANDB_API_KEY") is not None:
-        api_key = os.getenv("WANDB_API_KEY")
-        wandb.login(key=api_key)
-        run = wandb.init(
-            project=os.getenv("WANDB_PROJECT"),
-            entity=os.getenv("WANDB_ENTITY"),
-            config={"version": "baseline", "train_cfg": asdict(train_cfg), "model_cfg": asdict(model_config)},
-            name="baseline",
-        )
+    # if os.getenv("WANDB_API_KEY") is not None:
+    #     api_key = os.getenv("WANDB_API_KEY")
+    #     wandb.login(key=api_key)
+    #     run = wandb.init(
+    #         project=os.getenv("WANDB_PROJECT"),
+    #         entity=os.getenv("WANDB_ENTITY"),
+    #         config={"version": "baseline", "train_cfg": asdict(train_cfg), "model_cfg": asdict(model_config)},
+    #         name="baseline",
+    #     )
 
     train(model_config, train_cfg, run)
