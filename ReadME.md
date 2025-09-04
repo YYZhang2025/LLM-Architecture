@@ -94,11 +94,6 @@ Each model has a corresponding training script in the `train_scripts` directory.
 The default training and model configuration are defined in the `config.py` file. You can modify the configurations as needed.
 
 ```Python
-from dataclasses import dataclass
-
-import torch
-
-
 @dataclass
 class ModelConfig:
     n_layers: int = 8
@@ -131,13 +126,13 @@ class TrainConfig:
 > You can monitor the GPU usage using `uvx nvitop` command in another terminal.
 
 <h3 align="center">Baseline Model</h3>
-The baseline model is using: `./llm/models/baseline.py`
+The baseline model is defined in `./llm/models/baseline.py`
 
-- Sinusoidal Positional Encoding: `llm/models/positional_encodings/sined_pe.py`
-- RMSNorm: `llm/models/norms.py`
-  - Pre-Norm: `./llm/models/baseline.py`
-- Standard Multi-Head Attention: `llm/models/attentions/mha.py`
-- Feed Forward Network: `llm/models/ffn/mlp.py`
+- Sinusoidal Positional Encoding
+- RMSNorm
+  - Pre-Norm
+- Standard Multi-Head Attention
+- Feed Forward Network
 
 You can train the baseline model using the following command:
 
