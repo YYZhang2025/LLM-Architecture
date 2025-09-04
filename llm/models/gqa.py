@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from llm.modules.attentions import MultiHeadedAttention
+from llm.modules.attentions import GroupedQueryAttention
 from llm.modules.ffn import MLP
 from llm.modules.norms import RMSNorm
 from llm.modules.position_encodings import SinePositionalEncoding
@@ -12,8 +12,9 @@ from llm.modules.position_encodings import SinePositionalEncoding
 
 @dataclass
 class ModelConfig:
-    model_name: str = "baseline"
-    n_heads: int = 16
+    model_name: str = "group-query-attention"
+    n_query_heads: int = 16
+    n_kv_heads: int = 4
     d_model: int = 512
     d_ff: int = 2048
     n_layers: int = 8
@@ -37,10 +38,12 @@ class Embedding(nn.Module):
 
 
 class EncoderBlock(nn.Module):
-    def __init__(self, d_model: int, d_ff: int, n_heads: int):
+    def __init__(self, d_model: int, d_ff: int, n_query_heads: int, n_kv_heads: int):
         super().__init__()
 
-        self.attn = MultiHeadedAttention(d_model=d_model, n_heads=n_heads, is_causal=True)
+        self.attn = GroupedQueryAttention(
+            d_model=d_model, n_query_heads=n_query_heads, n_kv_heads=n_kv_heads, is_causal=True
+        )
         self.ffn = MLP(d_model=d_model, d_ff=d_ff, act_fn=nn.GELU)
 
         self.norm1 = RMSNorm(dim=d_model)
@@ -56,7 +59,7 @@ class EncoderBlock(nn.Module):
         return x, attn_probs
 
 
-class Baseline(nn.Module):
+class GQAModel(nn.Module):
     def __init__(self, config: ModelConfig):
         super().__init__()
 
@@ -66,7 +69,8 @@ class Baseline(nn.Module):
             [
                 EncoderBlock(
                     d_model=config.d_model,
-                    n_heads=config.n_heads,
+                    n_kv_heads=config.n_kv_heads,
+                    n_query_heads=config.n_query_heads,
                     d_ff=config.d_ff,
                 )
                 for _ in range(config.n_layers)

@@ -9,7 +9,7 @@ from tokenizers import Tokenizer
 
 import wandb
 from llm.config import TrainConfig
-from llm.models.baseline import Baseline, ModelConfig
+from llm.models.gqa import GQAModel, ModelConfig
 from llm.train_engine import train_model
 from llm.utils import (
     get_device,
@@ -33,7 +33,7 @@ if __name__ == "__main__":
     train_config = TrainConfig()
     train_config.device = get_device()
 
-    model = Baseline(model_config).to(train_config.device)
+    model = GQAModel(model_config).to(train_config.device)
     tokenizer = Tokenizer.from_file(TOKENIZER_JSON_PATH)
 
     # INITIALIZE WANDB

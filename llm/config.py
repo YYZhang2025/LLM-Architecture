@@ -4,17 +4,6 @@ import torch
 
 
 @dataclass
-class ModelConfig:
-    n_heads: int = 16
-    d_model: int = 512
-    d_ff: int = 2048
-    n_layers: int = 8
-
-    max_seq_len: int = 512
-    vocab_size: int = 16_000
-
-
-@dataclass
 class TrainConfig:
     device: torch.device = torch.device("cpu")
 

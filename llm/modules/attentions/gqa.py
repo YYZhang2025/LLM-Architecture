@@ -43,7 +43,7 @@ class GroupedQueryAttention(nn.Module):
         self.v_proj = nn.Linear(d_model, self.head_dim * n_kv_heads)
         self.out_proj = nn.Linear(d_model, d_model)
 
-    def forward(self, x: torch.Tensor, attn_mask: torch.Tensor | None = None):
+    def forward(self, x: torch.Tensor, attention_mask: torch.Tensor | None = None):
         B, S, D = x.size()
 
         q, k, v = self.q_proj(x), self.k_proj(x), self.v_proj(x)
@@ -57,12 +57,12 @@ class GroupedQueryAttention(nn.Module):
         attn_weights = (q @ k.transpose(-2, -1)) * self.scaling
 
         if self.is_causal:
-            causal_mask = torch.tril(torch.ones(1, 1, S, S, device=x.device))
-            if attn_mask is not None:
+            causal_mask = torch.tril(torch.ones(1, 1, S, S, device=x.device).bool())
+            if attention_mask is not None:
                 # TODO: Since our encoding method has no <pad> tokens, so the attention mask is None
                 # Need to check whether this is correct when the attention is not all 1
-                attn_mask = attn_mask.unsqueeze(1).unsqueeze(2)
-                causal_mask = causal_mask & attn_mask
+                attention_mask = attention_mask.unsqueeze(1).unsqueeze(2)
+                causal_mask = causal_mask & attention_mask
             attn_weights = attn_weights.masked_fill(causal_mask == 0, float("-inf"))
 
         attn_probs = attn_weights.softmax(dim=-1)

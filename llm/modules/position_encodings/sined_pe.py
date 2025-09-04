@@ -28,4 +28,5 @@ class SinePositionalEncoding(nn.Module):
         if seq_len > self.max_len:
             raise ValueError(f"Sequence length {seq_len} exceeds maximum length {self.max_len}")
         x = x + self.pe[:, :seq_len, :]
+
         return x
