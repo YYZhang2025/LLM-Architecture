@@ -1,6 +1,4 @@
-- [About This Repository](#about-this-repository)
-- [Experiments](#experiments)
-  - [Baseline Model](#baseline-model)
+- [Baseline Model](#baseline-model)
 
 
 
@@ -53,7 +51,8 @@ After above code, you should have following files in the `data` directory:
     └── 🧩 tokenizer-bpe.json  
 ```
 
-## About This Repository
+<h2 align="center">About This Repository</h2>
+
 This repository implements different SOTA LLM architectures using PyTorch. The current implemented models include:
 - Position Encoding:
   - Learned Positional Encoding
@@ -66,7 +65,8 @@ This repository implements different SOTA LLM architectures using PyTorch. The c
 
 
 
-## Experiments
+<h2 align="center">Experiments</h2>
+
 The dataset we are using is [TinyStoriesV2-GPT4](https://huggingface.co/datasets/roneneldan/TinyStories). We have pre-tokenized the dataset and saved it as numpy arrays for faster loading during training. The tokenizer used is a BPE tokenizer trained using the `tokenizers` library. For the tokenization part, please refer to the `pre_tokenize.py` script.
 
 All the model defined in the `llm/models` directory. 
@@ -85,4 +85,4 @@ Each model has a corresponding training script in the `train_scripts` directory.
 ```
 
 
-### Baseline Model
+<h3 align="center">Baseline Model</h3>
