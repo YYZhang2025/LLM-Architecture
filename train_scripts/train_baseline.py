@@ -16,18 +16,17 @@ from llm.utils import clear_cache, get_device, get_num_parameters, print_color, 
 TOKENIZER_JSON_PATH = "./data/tinystories/tokenizer-bpe.json"
 
 
-def get_lr(train_config: TrainConfig, cur_step: int) -> float:
+def get_lr(train_config: TrainConfig, cur_step: int, total_steps: int) -> float:
     if cur_step < train_config.warmup_steps:
         return train_config.max_lr * (cur_step + 1) / train_config.warmup_steps
 
-    if cur_step > train_config.total_steps:
+    if cur_step > total_steps:
         return train_config.min_lr
     # 3) in between, use cosine decay down to min learning rate
-    decay_ratio = (cur_step - train_config.warmup_steps) / (
-        train_config.total_steps - train_config.warmup_steps
-    )
+    decay_ratio = (cur_step - train_config.warmup_steps) / (total_steps - train_config.warmup_steps)
     assert 0 <= decay_ratio <= 1
     coeff = 0.5 * (1.0 + math.cos(math.pi * decay_ratio))  # coeff starts at 1 and goes to 0
+
     return train_config.min_lr + coeff * (train_config.max_lr - train_config.min_lr)
 
 
@@ -47,10 +46,11 @@ def train(model_config, train_config, run=None):
     tokenizer = Tokenizer.from_file(TOKENIZER_JSON_PATH)
 
     optimizer = torch.optim.AdamW(
-        model.parameters(), lr=train_cfg.lr, weight_decay=train_cfg.weight_decay, betas=train_cfg.betas
+        model.parameters(), lr=train_cfg.max_lr, weight_decay=train_cfg.weight_decay, betas=train_cfg.betas
     )
 
-    for step in range(train_cfg.total_steps):
+    total_steps = train_cfg.epochs * (len(train_dl.dataset) // train_cfg.micro_batch_size)
+    for step in range(total_steps):
         model.train()
         batch_loss = 0.0
         start_time = time.time()
@@ -75,7 +75,7 @@ def train(model_config, train_config, run=None):
         optimizer.step()
         optimizer.zero_grad()
 
-        lr = get_lr(train_cfg, step)
+        lr = get_lr(train_cfg, step, total_steps)
         for param_group in optimizer.param_groups:
             param_group["lr"] = lr
 
@@ -91,7 +91,7 @@ def train(model_config, train_config, run=None):
             )
 
         if (step + 1) % 10 == 0:
-            print(f"Step {step + 1}/{train_cfg.total_steps}, Loss: {batch_loss:.4f}")
+            print(f"Step {step + 1}/{total_steps}, Loss: {batch_loss:.4f}")
             sample_input_id = input_ids[:1, :]
             sample_logits, _ = model(input_ids=sample_input_id, attention_mask=None)
             sample_next_token = torch.argmax(sample_logits, dim=-1)
@@ -115,7 +115,6 @@ if __name__ == "__main__":
 
     train_cfg = TrainConfig()
     train_cfg.device = get_device()
-    train_cfg.total_steps = 1000
     train_cfg.micro_batch_size = 8
     train_cfg.gradient_accumulation_steps = 4
     model_config.max_seq_len = 1024

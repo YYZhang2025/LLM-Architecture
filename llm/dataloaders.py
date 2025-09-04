@@ -33,7 +33,7 @@ def get_dataloaders(
     seq_len=512,
     num_workers=4,
     pin_memory=True,
-):
+) -> tuple[DataLoader, DataLoader]:
     train_ds = TinyStoriesDataset(train_npy_path, seq_len=seq_len)
     eval_ds = TinyStoriesDataset(eval_npy_path, seq_len=seq_len)
 

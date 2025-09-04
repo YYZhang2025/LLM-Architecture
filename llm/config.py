@@ -22,7 +22,7 @@ class TrainConfig:
 
     micro_batch_size: int = 32
     gradient_accumulation_steps: int = 4
-    total_steps: int = 1000
+    epochs: int = 2
 
     betas: tuple = (0.9, 0.95)
     grad_clip: float = 1.0
