@@ -38,16 +38,19 @@ class Embedding(nn.Module):
 
 
 class EncoderBlock(nn.Module):
-    def __init__(self, d_model: int, d_ff: int, n_query_heads: int, n_kv_heads: int):
+    def __init__(self, config: ModelConfig):
         super().__init__()
 
         self.attn = GroupedQueryAttention(
-            d_model=d_model, n_query_heads=n_query_heads, n_kv_heads=n_kv_heads, is_causal=True
+            d_model=config.d_model,
+            n_query_heads=config.n_query_heads,
+            n_kv_heads=config.n_kv_heads,
+            is_causal=True,
         )
-        self.ffn = MLP(d_model=d_model, d_ff=d_ff, act_fn=nn.GELU)
+        self.ffn = MLP(d_model=config.d_model, d_ff=config.d_ff, act_fn=nn.GELU)
 
-        self.norm1 = RMSNorm(dim=d_model)
-        self.norm2 = RMSNorm(dim=d_model)
+        self.norm1 = RMSNorm(dim=config.d_model)
+        self.norm2 = RMSNorm(dim=config.d_model)
 
     def forward(self, x: torch.Tensor, attention_mask: torch.Tensor | None = None):
         attn_out, attn_probs = self.attn(self.norm1(x), attention_mask=attention_mask)
@@ -68,10 +71,7 @@ class GQAModel(nn.Module):
         self.layers = nn.ModuleList(
             [
                 EncoderBlock(
-                    d_model=config.d_model,
-                    n_kv_heads=config.n_kv_heads,
-                    n_query_heads=config.n_query_heads,
-                    d_ff=config.d_ff,
+                    config=config,
                 )
                 for _ in range(config.n_layers)
             ]

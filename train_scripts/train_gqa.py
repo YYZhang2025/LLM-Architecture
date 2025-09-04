@@ -32,6 +32,9 @@ if __name__ == "__main__":
     model_config = ModelConfig()
     train_config = TrainConfig()
     train_config.device = get_device()
+    # Use small batch size for CPU/GPU for debug
+    if "cuda" not in train_config.device.type:
+        train_config.micro_batch_size = 2
 
     model = GQAModel(model_config).to(train_config.device)
     tokenizer = Tokenizer.from_file(TOKENIZER_JSON_PATH)

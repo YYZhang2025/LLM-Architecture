@@ -7,13 +7,12 @@ import torch.nn.functional as F
 from llm.modules.attentions import MultiHeadedAttention
 from llm.modules.ffn import MLP
 from llm.modules.norms import RMSNorm
-from llm.modules.position_encodings import SinePositionalEncoding
 
 
 @dataclass
 class ModelConfig:
-    model_name: str = "baseline"
-    n_heads: int = 16
+    model_name: str = "RoPE"
+    n_heads = 16
     d_model: int = 512
     d_ff: int = 2048
     n_layers: int = 8
@@ -27,24 +26,27 @@ class Embedding(nn.Module):
         super().__init__()
 
         self.emb = nn.Embedding(config.vocab_size, config.d_model)
-        self.pos_enc = SinePositionalEncoding(d_model=config.d_model, max_len=config.max_seq_len)
 
     def forward(self, input_ids: torch.Tensor):
         x = self.emb(input_ids)
-        x = self.pos_enc(x)
-
         return x
 
 
 class EncoderBlock(nn.Module):
-    def __init__(self, config: ModelConfig):
+    def __init__(self, model_config: ModelConfig):
         super().__init__()
 
-        self.attn = MultiHeadedAttention(d_model=config.d_model, n_heads=config.n_heads, is_causal=True)
-        self.ffn = MLP(d_model=config.d_model, d_ff=config.d_ff, act_fn=nn.GELU)
+        self.attn = MultiHeadedAttention(
+            d_model=model_config.d_model,
+            n_heads=model_config.n_heads,
+            is_causal=True,
+            use_rope=True,
+            rop_config={"max_seq_len": model_config.max_seq_len},
+        )
+        self.ffn = MLP(d_model=model_config.d_model, d_ff=model_config.d_ff, act_fn=nn.GELU)
 
-        self.norm1 = RMSNorm(dim=config.d_model)
-        self.norm2 = RMSNorm(dim=config.d_model)
+        self.norm1 = RMSNorm(dim=model_config.d_model)
+        self.norm2 = RMSNorm(dim=model_config.d_model)
 
     def forward(self, x: torch.Tensor, attention_mask: torch.Tensor | None = None):
         attn_out, attn_probs = self.attn(self.norm1(x), attention_mask=attention_mask)
@@ -56,7 +58,7 @@ class EncoderBlock(nn.Module):
         return x, attn_probs
 
 
-class Baseline(nn.Module):
+class RoPEModel(nn.Module):
     def __init__(self, config: ModelConfig):
         super().__init__()
 
@@ -65,7 +67,7 @@ class Baseline(nn.Module):
         self.layers = nn.ModuleList(
             [
                 EncoderBlock(
-                    config=config,
+                    model_config=config,
                 )
                 for _ in range(config.n_layers)
             ]

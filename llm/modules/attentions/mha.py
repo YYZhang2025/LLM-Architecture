@@ -1,14 +1,23 @@
 import torch
 import torch.nn as nn
 
+from llm.modules.position_encodings import RotaryPositionalEncoding
+
 
 class MultiHeadedAttention(nn.Module):
-    def __init__(self, d_model: int = 2048, n_heads: int = 8, is_causal: bool = True):
+    def __init__(
+        self, d_model: int = 2048, n_heads: int = 8, is_causal: bool = True, use_rope: bool = False, **kwargs
+    ):
         super().__init__()
 
         self.d_model = d_model
         self.n_heads = n_heads
         self.is_causal = is_causal
+        self.use_rope = use_rope
+
+        self.rope = None
+        if use_rope:
+            self.rope = RotaryPositionalEncoding(head_dim=d_model // n_heads, **kwargs.get("rop_config", {}))
 
         assert d_model % n_heads == 0, "d_model must be divisible by n_heads"
 
@@ -27,6 +36,9 @@ class MultiHeadedAttention(nn.Module):
         q = q.view(B, S, self.n_heads, self.head_dim).transpose(1, 2)
         k = k.view(B, S, self.n_heads, self.head_dim).transpose(1, 2)
         v = v.view(B, S, self.n_heads, self.head_dim).transpose(1, 2)
+
+        if self.use_rope and self.rope is not None:
+            q, k = self.rope(q, k)
 
         attn_weights = (q @ k.transpose(-2, -1)) * self.scaling
 
