@@ -47,6 +47,8 @@ After above code, you should have following files in the `data` directory:
     └── 🧩 tokenizer-bpe.json  
 ```
 
+
+
 <h2 align="center">About This Repository</h2>
 
 This repository implements different SOTA LLM architectures using PyTorch. The current implemented models include:
@@ -80,5 +82,7 @@ Each model has a corresponding training script in the `train_scripts` directory.
 ├── 📄 train_baseline.py
 ```
 
+>[!TIP]
+> You can monitor the GPU usage using `uvx nvitop` command in another terminal.
 
 <h3 align="center">Baseline Model</h3>
