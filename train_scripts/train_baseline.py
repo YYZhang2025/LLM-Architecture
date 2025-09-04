@@ -1,6 +1,7 @@
 import math
 import os
 import time
+import warnings
 from dataclasses import asdict
 
 import dotenv
@@ -14,12 +15,12 @@ from llm.models.baseline import Baseline, ModelConfig
 from llm.utils import (
     clear_cache,
     get_device,
-    get_num_parameters,
     print_color,
     print_num_parameters,
     print_rich_dict,
 )
 
+warnings.filterwarnings("ignore")
 TOKENIZER_JSON_PATH = "./data/tinystories/tokenizer-bpe.json"
 
 

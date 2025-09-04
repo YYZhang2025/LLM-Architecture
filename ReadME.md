@@ -25,18 +25,24 @@ uv pip install -e .
 
 It will automatically create a virtual environment and install the required dependencies.
 And we also need download the `tinystories` dataset through
-
+You have two options:
+Option 1: Download dataset, and train BPE tokenizer, than tokenize the dataset and save as numpy array. (it might take 20 minutes)
 ```Shell
 chmod +x download.sh
 ./download.sh
 ```
-
-Than, we also need train a tokenizer and pre-tokenize it and save as numpy array to speed up training.
+After download the dataset, you can run the `pre_tokenize.py` script to tokenize the dataset and save it as numpy arrays for faster loading during training
 ```Shell
 python pre_tokenize.py
 ```
 
-After above code, you should have following files in the `data` directory:
+Option 2: Download the pre-tokenized dataset
+```Shell
+chmod +x download_tokenized.sh
+./download_tokenized.sh
+```
+
+After download and processed , you should have following files in the `data` directory:
 ```Text 
 📂 data  
 └── 📂 tinystories  
