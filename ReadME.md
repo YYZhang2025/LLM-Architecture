@@ -1,7 +1,3 @@
-- [Baseline Model](#baseline-model)
-
-
-
 <h1 align="center">LLM: Architecture</h1>
 <p align="center"><b>Implement different SOTA LLM Architecture using PyTorch</b></p>
 
