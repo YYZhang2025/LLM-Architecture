@@ -39,17 +39,18 @@ def train(model_config, train_config, run=None):
 
     model = Baseline(model_config).to(train_cfg.device)
     print_color(f"Model initialized. Number of parameters: {get_num_parameters(model)}", color="green")
+    tokenizer = Tokenizer.from_file(TOKENIZER_JSON_PATH)
+
     train_dl, eval_dl = get_dataloaders(
         batch_size=train_cfg.micro_batch_size, seq_len=model_config.max_seq_len
     )
+    total_steps = train_cfg.epochs * (len(train_dl.dataset) // train_cfg.micro_batch_size)
     train_dl = cycle_dataloader(train_dl)
-    tokenizer = Tokenizer.from_file(TOKENIZER_JSON_PATH)
 
     optimizer = torch.optim.AdamW(
         model.parameters(), lr=train_cfg.max_lr, weight_decay=train_cfg.weight_decay, betas=train_cfg.betas
     )
 
-    total_steps = train_cfg.epochs * (len(train_dl.dataset) // train_cfg.micro_batch_size)
     for step in range(total_steps):
         model.train()
         batch_loss = 0.0
@@ -115,9 +116,6 @@ if __name__ == "__main__":
 
     train_cfg = TrainConfig()
     train_cfg.device = get_device()
-    train_cfg.micro_batch_size = 8
-    train_cfg.gradient_accumulation_steps = 4
-    model_config.max_seq_len = 1024
 
     print_rich_dict(asdict(model_config), title="Model Config")
     print_rich_dict(asdict(train_cfg), title="Train Config")

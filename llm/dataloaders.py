@@ -18,7 +18,7 @@ class TinyStoriesDataset(Dataset):
 
     def __getitem__(self, i):
         s = i * self.stride
-        x = torch.as_tensor(self.tokens[s : s + self.seq_len], dtype=torch.long)
+        x = torch.from_numpy(self.tokens[s : s + self.seq_len]).long()
 
         input_ids = x[:-1].contiguous().clone()
         labels = x[1:].contiguous().clone()

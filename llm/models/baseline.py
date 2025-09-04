@@ -28,7 +28,7 @@ class EncoderBlock(nn.Module):
         super().__init__()
 
         self.attn = MultiHeadedAttention(d_model=d_model, n_heads=n_heads, is_causal=True)
-        self.ffn = MLP(d_model=d_model, d_ff=d_ff)
+        self.ffn = MLP(d_model=d_model, d_ff=d_ff, act_fn=nn.GELU)
 
         self.norm1 = LayerNorm(dim=d_model)
         self.norm2 = LayerNorm(dim=d_model)
@@ -85,7 +85,9 @@ class Baseline(nn.Module):
 
     def _init_weight(self, module):
         if isinstance(module, (nn.Linear, nn.Embedding)):
-            nn.init.xavier_uniform_(module.weight)
+            nn.init.xavier_uniform_(
+                module.weight,
+            )
         elif isinstance(module, LayerNorm):
             nn.init.constant_(module.weight, 1)
             nn.init.constant_(module.bias, 0)
