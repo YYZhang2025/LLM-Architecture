@@ -12,6 +12,14 @@ from llm.utils import (
 )
 
 
+def init_weights(module):
+    if isinstance(module, (nn.Linear, nn.Embedding)):
+        std = math.sqrt(2.0 / (module.weight.shape[0] + module.weight.shape[1]))
+        nn.init.trunc_normal_(module.weight, std=std, a=-3 * std, b=3 * std)
+    elif isinstance(module, nn.Embedding):
+        nn.init.trunc_normal_(module.weight, std=1.0, a=-3.0, b=3.0)
+
+
 def get_lr(train_config, cur_step: int, total_steps: int) -> float:
     if cur_step < train_config.warmup_steps:
         return train_config.max_lr * (cur_step + 1) / train_config.warmup_steps

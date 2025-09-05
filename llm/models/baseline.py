@@ -18,7 +18,7 @@ class ModelConfig:
     d_ff: int = 2048
     n_layers: int = 4
 
-    max_seq_len: int = 1028
+    max_seq_len: int = 512
     vocab_size: int = 10_000
 
 
@@ -71,8 +71,6 @@ class Baseline(nn.Module):
             ]
         )
 
-        self.apply(self._init_weight)
-
     @torch.no_grad()
     def generate(self, input_ids: torch.Tensor) -> torch.Tensor:
         self.eval()
@@ -91,9 +89,3 @@ class Baseline(nn.Module):
         logits = F.linear(x, self.embedding.emb.weight)
 
         return logits, attn_probs
-
-    def _init_weight(self, module):
-        if isinstance(module, (nn.Linear, nn.Embedding)):
-            nn.init.xavier_uniform_(
-                module.weight,
-            )

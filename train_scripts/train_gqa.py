@@ -10,7 +10,7 @@ from tokenizers import Tokenizer
 import wandb
 from llm.config import TrainConfig
 from llm.models.gqa import GQAModel, ModelConfig
-from llm.train_engine import train_model
+from llm.train_engine import init_weights, train_model
 from llm.utils import (
     get_device,
     get_num_parameters,
@@ -37,6 +37,7 @@ if __name__ == "__main__":
         train_config.micro_batch_size = 2
 
     model = GQAModel(model_config).to(train_config.device)
+    model.apply(init_weights)
     tokenizer = Tokenizer.from_file(TOKENIZER_JSON_PATH)
 
     # INITIALIZE WANDB
