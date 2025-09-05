@@ -3,6 +3,19 @@
 
 I write a note about corresponding to the code structure, please check [LLM Part1: Architecture](https://yuyang.info/posts/Blogs/LLM/LLM-Architecture/post.html).
 
+
+<h2 align="center">About This Repository</h2>
+
+This repository implements different SOTA LLM architectures using PyTorch. The current implemented models include:
+- Position Encoding:
+  - Learned Positional Encoding
+  - Sinusoidal Positional Encoding
+  - Relative Positional Encoding 
+  - Rotary Positional Encoding (RoPE)
+- Attention Mechanisms:
+  - Standard Multi-Head Attention
+  - Multi-Query Attention / Grouped-Query Attention
+
 <h2 align="center">Environment Prepare</h2>
 First, clone the repository and navigate into it:
 
@@ -58,17 +71,9 @@ After download and processed , you should have following files in the `data` dir
 
 
 
-<h2 align="center">About This Repository</h2>
+<h2 align="center">BPE Tokenizer</h2>
 
-This repository implements different SOTA LLM architectures using PyTorch. The current implemented models include:
-- Position Encoding:
-  - Learned Positional Encoding
-  - Sinusoidal Positional Encoding
-  - Relative Positional Encoding 
-  - Rotary Positional Encoding (RoPE)
-- Attention Mechanisms:
-  - Standard Multi-Head Attention
-  - Multi-Query Attention / Grouped-Query Attention
+The BPE tokenizer is implemented using the `tokenizers` library. The tokenizer is trained on the `TinyStoriesV2-GPT4` dataset with a vocabulary size of **10,000** tokens. The tokenizer configuration is defined in the `pre_tokenize.py` script.
 
 
 
@@ -143,3 +148,37 @@ python train_scripts/train_baseline.py
 Below is the training and evaluation loss curve for the baseline model:
 
 
+<h3 align="center">Model with Grouped Query Attention</h3>
+The grouped query attention model is defined in `./llm/models/gqa.py`
+
+- Sinusoidal Positional Encoding
+- RMSNorm
+  - Pre-Norm
+- Grouped Query Attention / Multi-Query Attention
+- Feed Forward Network
+  
+Train the grouped query attention model using the following command:
+
+```Shell
+python train_scripts/train_gqa.py 
+```
+
+Below is the training and evaluation loss curve for the GQA model:
+
+
+<h3 align="center">Model with Rotary Positional Encoding</h3>
+The rotary positional encoding model is defined in `./llm/models/rope.py`
+
+- Rotary Positional Encoding
+- RMSNorm
+  - Pre-Norm
+- Grouped Query Attention / Multi-Query Attention
+- Feed Forward Network
+
+Train the rotary positional encoding model using the following command:
+
+```Shell
+python train_scripts/train_rope.py
+```
+
+Below is the training and evaluation loss curve for the Rotary Positional Encoding model:

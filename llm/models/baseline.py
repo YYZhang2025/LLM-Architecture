@@ -16,10 +16,10 @@ class ModelConfig:
     n_heads: int = 16
     d_model: int = 512
     d_ff: int = 2048
-    n_layers: int = 8
+    n_layers: int = 4
 
-    max_seq_len: int = 512
-    vocab_size: int = 16_000
+    max_seq_len: int = 1028
+    vocab_size: int = 10_000
 
 
 class Embedding(nn.Module):

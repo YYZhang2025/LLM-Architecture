@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
 
+from llm.modules.position_encodings import RotaryPositionalEncoding
+
 
 def repeat_kv(k, v, num_repeats):
     if num_repeats == 1:
@@ -24,6 +26,8 @@ class GroupedQueryAttention(nn.Module):
         n_query_heads: int = 8,
         n_kv_heads: int = 2,
         is_causal: bool = True,
+        use_rope: bool = False,
+        **kwargs,
     ):
         super().__init__()
 
@@ -43,6 +47,12 @@ class GroupedQueryAttention(nn.Module):
         self.v_proj = nn.Linear(d_model, self.head_dim * n_kv_heads)
         self.out_proj = nn.Linear(d_model, d_model)
 
+        self.rope = None
+        if use_rope:
+            self.rope = RotaryPositionalEncoding(
+                head_dim=d_model // n_query_heads, **kwargs.get("rop_config", {})
+            )
+
     def forward(self, x: torch.Tensor, attention_mask: torch.Tensor | None = None):
         B, S, D = x.size()
 
@@ -53,6 +63,9 @@ class GroupedQueryAttention(nn.Module):
 
         # HIGHLIGHT: The main different between MHA and GQA
         k, v = repeat_kv(k, v, self.num_repeats)
+
+        if self.rope is not None:
+            q, k = self.rope(q, k)
 
         attn_weights = (q @ k.transpose(-2, -1)) * self.scaling
 

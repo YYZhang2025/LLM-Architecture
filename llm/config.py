@@ -8,7 +8,7 @@ class TrainConfig:
     device: torch.device = torch.device("cpu")
 
     epochs: int = 2
-    micro_batch_size: int = 128
+    micro_batch_size: int = 256
     gradient_accumulation_steps: int = 2
     eval_steps: int = 100
 

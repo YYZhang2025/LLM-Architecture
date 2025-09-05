@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 # Define a directory to save the dataset
 SAVE_DIR = "./data/tinystories"
-VOCAB_SIZE = 16_000
+VOCAB_SIZE = 10_000
 
 # Load local files
 train_file = os.path.join(SAVE_DIR, "TinyStoriesV2-GPT4-train.txt")

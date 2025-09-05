@@ -167,10 +167,10 @@ def train_model(model, tokenizer, model_config, train_config, run=None):
         batch_loss = 0.0
 
         if (step + 1) % train_config.eval_steps == 0 or step == total_steps - 1:
-            eval_model(
-                model, eval_dl, tokenizer, model_config, train_config, step, total_steps, run
-            )
+            eval_model(model, eval_dl, tokenizer, model_config, train_config, step, total_steps, run)
 
     total_time = time.time() - total_start_time
+    if run is not None:
+        run.log({"train/total_time": total_time}, step=total_steps)
     print_color(f"Total training time: {total_time / 60:.2f} minutes", "green")
     print("Training completed.")

@@ -4,11 +4,10 @@ import torch.nn as nn
 from llm.modules.position_encodings import RotaryPositionalEncoding
 
 
-class MultiHeadedAttention(nn.Module):
-    def __init__(
-        self, d_model: int = 2048, n_heads: int = 8, is_causal: bool = True, use_rope: bool = False, **kwargs
-    ):
+class FlashAttention(nn.Module):
+    def __init__(self, d_model: int, n_heads: int, is_causal: bool = True, use_rope: bool = False, **kwargs):
         super().__init__()
+        # Implementation of Flash Attention goes here
 
         self.d_model = d_model
         self.n_heads = n_heads
@@ -40,20 +39,5 @@ class MultiHeadedAttention(nn.Module):
         if self.use_rope and self.rope is not None:
             q, k = self.rope(q, k)
 
-        attn_weights = (q @ k.transpose(-2, -1)) * self.scaling
-
-        if self.is_causal:
-            causal_mask = torch.tril(torch.ones(1, 1, S, S, device=x.device).bool())
-            if attention_mask is not None:
-                # TODO: Since our encoding method has no <pad> tokens, so the attention mask is None
-                # Need to check whether this is correct when the attention is not all 1
-                attention_mask = attention_mask.unsqueeze(1).unsqueeze(2)
-                causal_mask = causal_mask & attention_mask
-            attn_weights = attn_weights.masked_fill(causal_mask == 0, float("-inf"))
-
-        attn_probs = attn_weights.softmax(dim=-1)
-        out = attn_probs @ v
-        out = out.transpose(1, 2).contiguous().view(B, S, D)
-        out = self.out_proj(out)
-
-        return out, attn_probs
+        # Flash Attention implementation would go here
+        raise NotImplementedError("Flash Attention is not yet implemented.")
