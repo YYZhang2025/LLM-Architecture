@@ -131,6 +131,9 @@ class TrainConfig:
 > You can monitor the GPU usage using `uvx nvitop` command in another terminal.
 
 <h3 align="center">Baseline Model</h3>
+
+Total training time: 95.49 minutes
+
 The baseline model is defined in `./llm/models/baseline.py`
 
 - Sinusoidal Positional Encoding
@@ -146,6 +149,9 @@ python train_scripts/train_baseline.py
 ```
 
 Below is the training and evaluation loss curve for the baseline model:
+
+![](./assets/baseline_loss_curve.png)
+![](./assets/baseline_eval_curve.png)
 
 
 <h3 align="center">Model with Grouped Query Attention</h3>
