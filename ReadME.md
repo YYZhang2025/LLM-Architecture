@@ -171,6 +171,12 @@ python train_scripts/train_gqa.py
 
 Below is the training and evaluation loss curve for the GQA model:
 
+![](./assets/gqa_baseline_loss.png)
+![](./assets/gqa_baseline_eval.png)
+![](./assets/gqa_baseline_time_compare.png)
+
+The grouped query attention model achieves similar performance as the baseline model, but with reduced training time and memory usage. This demonstrates the efficiency of the grouped query attention mechanism.
+
 
 <h3 align="center">Model with Rotary Positional Encoding</h3>
 The rotary positional encoding model is defined in `./llm/models/rope.py`
