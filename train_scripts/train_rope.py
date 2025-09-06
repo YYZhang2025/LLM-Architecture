@@ -9,7 +9,7 @@ from tokenizers import Tokenizer
 
 import wandb
 from llm.config import TrainConfig
-from llm.models.rope import ModelConfig, RoPEModel
+from llm.models.rope_model import ModelConfig, RoPEModel
 from llm.train_engine import init_weights, train_model
 from llm.utils import (
     get_device,

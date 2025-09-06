@@ -9,7 +9,7 @@ from tokenizers import Tokenizer
 
 import wandb
 from llm.config import TrainConfig
-from llm.models.flash_attention import FlashAttentionModel, ModelConfig
+from llm.models.flash_attention_model import FlashAttentionModel, ModelConfig
 from llm.train_engine import init_weights, train_model
 from llm.utils import (
     get_device,

@@ -9,7 +9,7 @@ from tokenizers import Tokenizer
 
 import wandb
 from llm.config import TrainConfig
-from llm.models.gqa import GQAModel, ModelConfig
+from llm.models.gqa_model import GQAModel, ModelConfig
 from llm.train_engine import init_weights, train_model
 from llm.utils import (
     get_device,

@@ -38,4 +38,4 @@ class FlashMHA(nn.Module):
             causal=self.is_causal,
         )
         out = out.reshape(B, T, C)
-        return self.proj(out)
+        return self.proj(out), None

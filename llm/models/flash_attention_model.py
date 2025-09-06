@@ -83,6 +83,7 @@ class FlashAttentionModel(nn.Module):
     def forward(self, input_ids: torch.Tensor, attention_mask: torch.Tensor | None = None):
         x = self.embedding(input_ids)
 
+        attention_mask = None
         for layer in self.layers:
             x, attn_probs = layer(x, attention_mask=attention_mask)
 

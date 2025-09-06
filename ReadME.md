@@ -33,6 +33,7 @@ uv --version
 
 uv sync 
 source .venv/bin/activate
+uv pip install flash-attn --no-build-isolation
 uv pip install -e .
 ```
 

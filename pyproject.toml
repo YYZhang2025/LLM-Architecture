@@ -15,7 +15,6 @@ dependencies = [
     "transformers>=4.54.0",
     "wandb>=0.21.0",
     "rich>=13.3.4",
-    "triton>=3.4.0"
 ]
 
 
