@@ -40,11 +40,13 @@ def generate_samples(
     device,
     prompt: str = "Once upon a time in a land far, far away, ",
     max_length: int = 100,
+    dtype: torch.dtype = torch.float16,
 ) -> str:
     is_training = model.training
     model.eval()
     input_ids = tokenizer.encode(prompt).ids
     input_ids = torch.tensor(input_ids, device=device).unsqueeze(0)  # (1, seq_len)
+    input_ids = input_ids.to(dtype=dtype)
 
     generated_ids = []
     with torch.no_grad():
@@ -77,6 +79,11 @@ def eval_model(
     run=None,
 ) -> float:
     model.eval()
+    ctx = (
+        torch.autocast(train_config.device.type, dtype=torch.float16)
+        if train_config.device.type != "cuda"
+        else torch.autocast(train_config.device.type, dtype=torch.bfloat16)
+    )
     eval_loss = 0.0
     with torch.no_grad():
         pbar = tqdm(eval_dl, desc="Evaluating", leave=False)
@@ -85,11 +92,12 @@ def eval_model(
             attention_mask = batch["attention_mask"].to(train_config.device, non_blocking=True)
             labels = batch["labels"].to(train_config.device, non_blocking=True)
 
-            logits, _ = model(input_ids=input_ids, attention_mask=attention_mask)
-            loss = torch.nn.functional.cross_entropy(
-                logits.view(-1, model_config.vocab_size),
-                labels.view(-1),
-            )
+            with ctx:
+                logits, _ = model(input_ids=input_ids, attention_mask=attention_mask)
+                loss = torch.nn.functional.cross_entropy(
+                    logits.view(-1, model_config.vocab_size),
+                    labels.view(-1),
+                )
             eval_loss += loss.item()
             pbar.set_postfix(loss=loss.item())
             del input_ids, attention_mask, labels, logits, loss
