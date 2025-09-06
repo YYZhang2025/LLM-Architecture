@@ -244,7 +244,7 @@ The rotary positional encoding model is defined in `./llm/models/rope.py`
 - Rotary Positional Encoding
 - RMSNorm
   - Pre-Norm
-- Grouped Query Attention / Multi-Query Attention
+- Flash Attention
 - Feed Forward Network
 
 Train the rotary positional encoding model using the following command:
@@ -254,3 +254,24 @@ python train_scripts/train_rope.py
 ```
 
 Below is the training and evaluation loss curve for the Rotary Positional Encoding model:
+
+
+
+
+
+![W&B Chart 9_6_2025, 11_31_25 PM](./assets/rope_vs_baseline.png)
+
+
+
+![rope_vs_flash_eval](./assets/rope_vs_flash_eval.png)
+
+
+
+```Text
+Prompt: Once upon a time in a land far, far away, 
+Generated text: vers was a little girl named Lily. She loved to play with her toys and eat yummy food. One day, she found a big box in her room. She was very excited and wanted to open it.
+```
+
+
+
+Total training time: 46.73 minutes
