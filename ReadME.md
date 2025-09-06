@@ -173,6 +173,7 @@ Total training time: **95.49** minutes
 
 
 <h3 align="center">Model with Grouped Query Attention</h3>
+
 The grouped query attention model is defined in `./llm/models/gqa.py`
 
 - Sinusoidal Positional Encoding
@@ -221,7 +222,13 @@ Memory takes
 
 
 
+<h3 align="center">Model with Flash Attention</h3>
 
+![](./assets/flas_attn_baseline.png)
+
+![](./assets/flash_attn_baseline_step_time.png)
+
+![](./assets/flash_attn_baseline_toptal_time.png)
 
 <h3 align="center">Model with Rotary Positional Encoding</h3>
 The rotary positional encoding model is defined in `./llm/models/rope.py`
