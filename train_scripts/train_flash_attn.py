@@ -36,6 +36,10 @@ if __name__ == "__main__":
     if "cuda" not in train_config.device.type:
         train_config.micro_batch_size = 2
 
+    # Since we are using FlashAttention, we can use larger batch size
+    train_config.gradient_accumulation_steps = 1
+    train_config.micro_batch_size = 512
+
     model = FlashAttentionModel(model_config).to(train_config.device)
     model.apply(init_weights)
     tokenizer = Tokenizer.from_file(TOKENIZER_JSON_PATH)

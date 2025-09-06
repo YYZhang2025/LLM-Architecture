@@ -230,6 +230,14 @@ Memory takes
 
 ![](./assets/flash_attn_baseline_toptal_time.png)
 
+
+```Text
+Prompt: Once upon a time in a land far, far away, 
+Generated text: 6, and all the animals were very happy. They wanted to be the best of friends.
+```
+
+Total training time: 45.17 minutes
+
 <h3 align="center">Model with Rotary Positional Encoding</h3>
 The rotary positional encoding model is defined in `./llm/models/rope.py`
 
