@@ -154,6 +154,23 @@ Below is the training and evaluation loss curve for the baseline model:
 ![](./assets/baseline_loss_curve.png)
 ![](./assets/baseline_eval_curve.png)
 
+Example generated text:
+
+```Text
+Prompt: Once upon a time in a land far, far away, 
+Generated text:  The people were walking in the forest. They were very happy and excited.
+```
+
+
+
+Total training time: **95.49** minutes
+
+
+
+![image-20250906220128542](./assets/image-20250906220128542.png)
+
+
+
 
 <h3 align="center">Model with Grouped Query Attention</h3>
 The grouped query attention model is defined in `./llm/models/gqa.py`
@@ -164,6 +181,7 @@ The grouped query attention model is defined in `./llm/models/gqa.py`
 - Grouped Query Attention / Multi-Query Attention
 - Feed Forward Network
   
+
 Train the grouped query attention model using the following command:
 
 ```Shell
@@ -177,6 +195,32 @@ Below is the training and evaluation loss curve for the GQA model:
 ![](./assets/gqa_baseline_time_compare.png)
 
 The grouped query attention model achieves similar performance as the baseline model, but with reduced training time and memory usage. This demonstrates the efficiency of the grouped query attention mechanism.
+
+
+
+Example Generated Text:
+
+```Text
+Prompt: Once upon a time in a land far, far away, 
+Generated text:  A little girl named Lily went to the park. She saw a big, red ball and wanted to play with it. She asked her mom, "Can I play with the ball?"
+
+```
+
+
+
+Total training time: **94.72** minutes
+
+
+
+![image-20250906220219815](./assets/image-20250906220219815.png)
+
+
+
+Memory takes
+
+
+
+
 
 
 <h3 align="center">Model with Rotary Positional Encoding</h3>

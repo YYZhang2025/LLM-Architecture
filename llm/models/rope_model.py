@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from llm.modules.attentions import MultiHeadedAttention
+from llm.modules.attentions import FlashMHA
 from llm.modules.ffn import MLP
 from llm.modules.norms import RMSNorm
 
@@ -36,7 +36,7 @@ class EncoderBlock(nn.Module):
     def __init__(self, model_config: ModelConfig):
         super().__init__()
 
-        self.attn = MultiHeadedAttention(
+        self.attn = FlashMHA(
             d_model=model_config.d_model,
             n_heads=model_config.n_heads,
             is_causal=True,
