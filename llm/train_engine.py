@@ -37,17 +37,16 @@ def generate_samples(
     device,
     prompt: str = "Once upon a time in a land far, far away, ",
     max_length: int = 100,
-    dtype: torch.dtype = torch.float16,
 ) -> str:
-    is_training = model.training
-    model.eval()
-    input_ids = tokenizer.encode(prompt).ids
-    input_ids = torch.tensor(input_ids, device=device).unsqueeze(0)  # (1, seq_len)
     ctx = (
         torch.autocast(device.type, dtype=torch.float16)
         if device.type != "cuda"
         else torch.autocast(device.type, dtype=torch.bfloat16)
     )
+    is_training = model.training
+    model.eval()
+    input_ids = tokenizer.encode(prompt).ids
+    input_ids = torch.tensor(input_ids, device=device).unsqueeze(0)  # (1, seq_len)
 
     generated_ids = []
     with torch.no_grad():
@@ -80,6 +79,11 @@ def eval_model(
     total_steps: int,
     run=None,
 ) -> float:
+    ctx = (
+        torch.autocast(train_config.device.type, dtype=torch.float16)
+        if train_config.device.type != "cuda"
+        else torch.autocast(train_config.device.type, dtype=torch.bfloat16)
+    )
     model.eval()
     eval_loss = 0.0
     with torch.no_grad():
