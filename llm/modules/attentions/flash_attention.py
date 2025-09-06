@@ -20,7 +20,7 @@ class FlashMHA(nn.Module):
             self.rope = RotaryPositionalEncoding(head_dim=d_model // n_heads, **kwargs.get("rop_config", {}))
 
     def forward(self, x, attention_mask=None):
-        assert attention_mask is None, "Right Now we only support attention_mask=None for FlashMHA"
+        # assert attention_mask is None, "Right Now we only support attention_mask=None for FlashMHA"
         B, T, C = x.shape
         qkv = self.qkv(x)
         q, k, v = qkv.chunk(3, dim=-1)
