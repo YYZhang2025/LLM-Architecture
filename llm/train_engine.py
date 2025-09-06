@@ -6,10 +6,7 @@ from torch import nn
 from tqdm import tqdm
 
 from llm.dataloaders import cycle_dataloader, get_dataloaders
-from llm.utils import (
-    clear_cache,
-    print_color,
-)
+from llm.utils import clear_cache, get_device, print_color
 
 
 def init_weights(module):
@@ -46,12 +43,17 @@ def generate_samples(
     model.eval()
     input_ids = tokenizer.encode(prompt).ids
     input_ids = torch.tensor(input_ids, device=device).unsqueeze(0)  # (1, seq_len)
-    input_ids = input_ids.to(dtype=dtype)
+    ctx = (
+        torch.autocast(device.type, dtype=torch.float16)
+        if device.type != "cuda"
+        else torch.autocast(device.type, dtype=torch.bfloat16)
+    )
 
     generated_ids = []
     with torch.no_grad():
         for _ in range(max_length):
-            logits, _ = model(input_ids=input_ids)
+            with ctx:
+                logits, _ = model(input_ids=input_ids)
             next_token_logits = logits[:, -1, :]  # (1, vocab_size)
             next_token_id = torch.argmax(next_token_logits, dim=-1).unsqueeze(0)  # (1, 1)
             input_ids = torch.cat([input_ids, next_token_id], dim=-1)  # (1, seq_len + 1)
@@ -79,11 +81,6 @@ def eval_model(
     run=None,
 ) -> float:
     model.eval()
-    ctx = (
-        torch.autocast(train_config.device.type, dtype=torch.float16)
-        if train_config.device.type != "cuda"
-        else torch.autocast(train_config.device.type, dtype=torch.bfloat16)
-    )
     eval_loss = 0.0
     with torch.no_grad():
         pbar = tqdm(eval_dl, desc="Evaluating", leave=False)
