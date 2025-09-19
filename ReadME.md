@@ -37,6 +37,15 @@ uv pip install flash-attn --no-build-isolation
 uv pip install -e .
 ```
 
+Verify the installation by running the following command:
+```Shell
+uv run python - <<'PY'
+import torch
+print("torch:", torch.__version__, "cuda:", torch.version.cuda, "avail:", torch.cuda.is_available())
+print("gpu:", torch.cuda.get_device_name(0) if torch.cuda.is_available() else "none")
+PY
+```
+
 It will automatically create a virtual environment and install the required dependencies.
 And we also need download the `tinystories` dataset through
 You have two options:
