@@ -17,6 +17,7 @@ class Router(nn.Module):
         self.d_model = d_model
 
         self.w_gate = nn.Linear(d_model, num_experts, bias=False)
+        self.epsilon = epsilon
 
     def forward(self, x: torch.Tensor, use_aux_loss=False):
         orig_shape = x.shape
@@ -43,17 +44,18 @@ class Router(nn.Module):
 
         # Norm gate scores to sum to the capacity
         gate_scores = (masked_gate_scores / denominators) * capacity
-
+        aux_loss = None
         if use_aux_loss:
-            load = gate_scores.sum(0)  # Sum over all examples
-            importance = gate_scores.sum(1)  # Sum over all experts
+            # Load-balancing auxiliary loss (Switch-style): encourage uniform importance and load
+            # importance: sum of probabilities per expert; load: number of tokens assigned per expert
+            importance = gate_probs.sum(dim=0)  # [E]
+            load = mask.sum(dim=0)  # [E]
+            # Mean-squared difference between normalized vectors
+            imp_norm = importance / (importance.sum() + self.epsilon)
+            load_norm = load / (load.sum() + self.epsilon)
+            aux_loss = ((imp_norm - load_norm) ** 2).mean()
 
-            # Aux loss is mean suqared difference between load and importance
-            loss = ((load - importance) ** 2).mean()
-
-            return gate_scores, loss
-
-        return gate_scores, None
+        return gate_scores, aux_loss
 
 
 class SwitchMoE(nn.Module):
