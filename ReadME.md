@@ -15,6 +15,9 @@ This repository implements different SOTA LLM architectures using PyTorch. The c
 - Attention Mechanisms:
   - Standard Multi-Head Attention
   - Multi-Query Attention / Grouped-Query Attention
+- MoE (Mixture of Experts):
+  - Switch Transformer
+
 
 <h2 align="center">Environment Prepare</h2>
 First, clone the repository and navigate into it:
@@ -27,6 +30,7 @@ cd LLM-Architecture
 Then, we need to install dependencies, here we are using `uv`
 
 ```Shell
+# Download and install uv
 wget -qO- https://astral.sh/uv/install.sh | sh
 export PATH="$HOME/.local/bin:$PATH"
 uv --version
@@ -284,3 +288,8 @@ Generated text: vers was a little girl named Lily. She loved to play with her to
 
 
 Total training time: 46.73 minutes
+
+
+
+<h3 align="center">Model with Switch Mixture of Experts</h3>
+
