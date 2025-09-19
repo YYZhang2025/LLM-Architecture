@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 
 class Router(nn.Module):
@@ -18,6 +19,13 @@ class Router(nn.Module):
         self.w_gate = nn.Linear(d_model, num_experts, bias=False)
 
     def forward(self, x: torch.Tensor, use_aux_loss=False):
+        orig_shape = x.shape
+        if x.dim() == 3:
+            B, T, D = orig_shape
+            x_flat = x.view(B * T, D)
+        else:
+            x_flat = x
+
         gate_scores = self.w_gate(x)
         gate_probs = torch.softmax(gate_scores, dim=-1)
 
@@ -28,7 +36,7 @@ class Router(nn.Module):
         top1_expert_indices = torch.argmax(gate_probs, dim=-1)
 
         # Mask to enforce capacity constraints
-        mask = torch.zeros_like(gate_scores).scatter_(1, top1_expert_indices.unsqueeze(1), 1)
+        mask = F.one_hot(top1_expert_indices, num_classes=self.num_experts).to(gate_probs.dtype)
         masked_gate_scores = gate_scores * mask
 
         denominators = masked_gate_scores.sum(0, keepdim=True) + self.epsilon

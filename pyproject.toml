@@ -10,7 +10,7 @@ dependencies = [
     "huggingface-hub>=0.34.2",
     "numpy<3",
     "pillow>=11.3.0",
-    "torch<3",
+    "torch==2.8.0",
     "torchvision>=0.22.1",
     "transformers>=4.54.0",
     "wandb>=0.21.0",
