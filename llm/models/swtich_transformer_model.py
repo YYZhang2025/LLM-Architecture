@@ -44,6 +44,7 @@ class EncoderBlock(nn.Module):
             use_rope=True,
             rop_config={"max_seq_len": model_config.max_seq_len},
         )
+
         self.ffn = SwitchMoE(
             d_model=model_config.d_model,
             d_ff=model_config.d_ff,
