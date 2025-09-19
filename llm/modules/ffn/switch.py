@@ -27,30 +27,19 @@ class Router(nn.Module):
         else:
             x_flat = x
 
-        gate_scores = self.w_gate(x)
-        gate_probs = torch.softmax(gate_scores, dim=-1)
+        # Gating probabilities
+        logits = self.w_gate(x_flat)  # [N, E]
+        probs = torch.softmax(logits, dim=-1)  # [N, E]
 
-        # Determine the top-1 expert for each token
-        capacity = int(self.capacity_factor * x.size(0))
+        # Top-1 expert assignment
+        top1 = probs.argmax(dim=-1)  # [N]
+        gate_scores = F.one_hot(top1, num_classes=self.num_experts).to(probs.dtype)  # [N, E]
 
-        # Get the top-1 expert indices
-        top1_expert_indices = torch.argmax(gate_probs, dim=-1)
-
-        # Mask to enforce capacity constraints
-        mask = F.one_hot(top1_expert_indices, num_classes=self.num_experts).to(gate_probs.dtype)
-        masked_gate_scores = gate_scores * mask
-
-        denominators = masked_gate_scores.sum(0, keepdim=True) + self.epsilon
-
-        # Norm gate scores to sum to the capacity
-        gate_scores = (masked_gate_scores / denominators) * capacity
+        # Optional load-balancing aux loss
         aux_loss = None
         if use_aux_loss:
-            # Load-balancing auxiliary loss (Switch-style): encourage uniform importance and load
-            # importance: sum of probabilities per expert; load: number of tokens assigned per expert
-            importance = gate_probs.sum(dim=0)  # [E]
-            load = mask.sum(dim=0)  # [E]
-            # Mean-squared difference between normalized vectors
+            importance = probs.sum(dim=0)  # [E]
+            load = gate_scores.sum(dim=0)  # [E]
             imp_norm = importance / (importance.sum() + self.epsilon)
             load_norm = load / (load.sum() + self.epsilon)
             aux_loss = ((imp_norm - load_norm) ** 2).mean()
@@ -75,22 +64,63 @@ class SwitchMoE(nn.Module):
 
         self.router = Router(d_model, num_experts, capacity_factor, epsilon)
 
-        self.experts = nn.ModuleList(
-            [
-                nn.Sequential(nn.Linear(d_model, d_ff), act_fn(), nn.Linear(d_ff, d_model))
-                for _ in range(num_experts)
-            ]
+        # ------ Old implementation with nn.ModuleList of experts ------
+        # self.experts = nn.ModuleList(
+        #     [
+        #         nn.Sequential(nn.Linear(d_model, d_ff), act_fn(), nn.Linear(d_ff, d_model))
+        #         for _ in range(num_experts)
+        #     ]
+        # )
+        # ----------------------------------------------------------
+
+        self.act = act_fn()
+        # Fused expert parameters: one big linear combination + split layer
+        self.act = act_fn()
+        self.W1 = nn.Parameter(torch.empty(num_experts, d_model, d_ff))  # [E, D, H]
+        self.W2 = nn.Parameter(torch.empty(num_experts, d_ff, d_model))  # [E, H, D]
+
+        # Xavier/kaiming-style init
+        for e in range(num_experts):
+            nn.init.xavier_uniform_(self.W1[e])
+            nn.init.xavier_uniform_(self.W2[e])
+
+    def forward(self, x: torch.Tensor, use_aux_loss: bool = False):
+        # Support [B, T, D] or [N, D] by flattening tokens
+        orig_shape = x.shape
+        if x.dim() == 3:
+            B, T, D = orig_shape
+            x_flat = x.reshape(B * T, D)
+        elif x.dim() == 2:
+            x_flat = x
+            D = x_flat.size(-1)
+
+        # gate_scores: [N, E] (one weight per token per expert)
+        gate_scores, aux_loss = self.router(x_flat, use_aux_loss)
+
+        # Fused experts: compute per-expert FFN for all tokens, then weight by gate scores
+        # x_flat: [N, D], gate_scores: [N, E]
+        # First layer: [N, D] x [E, D, H] -> [N, E, H]
+        h = torch.einsum("nd,edh->neh", x_flat, self.W1)
+        h = self.act(h)
+        # Second layer: [N, E, H] x [E, H, D] -> [N, E, D]
+        y_all = torch.einsum("neh,ehd->ned", h, self.W2)
+
+        # Weight by gate scores and sum over experts -> [N, D]
+        expert_outputs_flat = (gate_scores.unsqueeze(-1) * y_all).sum(dim=1)
+
+        # ------ Old implementation with nn.ModuleList of experts ------
+        # for i, expert in enumerate(self.experts):
+        #     expert_output = expert(x)
+        #     expert_outputs += gate_scores[:, i].unsqueeze(1) * expert_output
+        # ----------------------------------------------------------
+
+        # Restore original shape
+        if x.dim() == 3:
+            expert_outputs = expert_outputs_flat.view(B, T, D)
+        else:
+            expert_outputs = expert_outputs_flat
+
+        assert expert_outputs.shape == orig_shape, (
+            f"Expected output shape {orig_shape}, got {expert_outputs.shape}"
         )
-
-    def forward(self, x: torch.Tensor, use_aux_loss=False):
-        gate_scores, aux_loss = self.router(x, use_aux_loss)
-
-        # Create a tensor to hold the expert outputs
-        expert_outputs = torch.zeros_like(x)
-
-        # For each expert, compute its output and weight it by the gate scores
-        for i, expert in enumerate(self.experts):
-            expert_output = expert(x)
-            expert_outputs += gate_scores[:, i].unsqueeze(1) * expert_output
-
         return expert_outputs, aux_loss
