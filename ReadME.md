@@ -293,3 +293,21 @@ Total training time: 46.73 minutes
 
 <h3 align="center">Model with Switch Mixture of Experts</h3>
 
+The result of Switch Mixture of Experts compare with RoPE model
+
+![](./assets/switch_rope_compare.png)
+As we can see, the Switch Mixture of Experts model is performance almost the same as the RoPE model. 
+
+
+
+![Switch Mixture of Experts Training Time](./assets/swtich_time_eplse.png)
+
+From this graph we can see that the Switch Mixture of Experts model takes slightly more time per training step compared to the RoPE model. This is expected due to the additional computation required for the MoE mechanism. However, the overall training time is still reasonable and the performance gain from using MoE can be significant in larger models.
+
+```Text
+Prompt: Once upon a time in a land far, far away, 
+Generated text: 8 friends, there was a little girl named Lily. She loved to play with her friends in the park. One day, Lily and 
+her friends decided to have a picnic. They were very excited to eat yummy food.
+```
+
+Total training time: **52.93** minutes
